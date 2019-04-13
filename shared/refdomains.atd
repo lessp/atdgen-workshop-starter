@@ -1,0 +1,19 @@
+type t = {
+  refdomain: string;
+  backlinks: int;
+  refpages: int;
+  first_seen <ocaml name="firstSeen"> : string;
+  last_visited <ocaml name="lastVisited">: string wrap <ocaml t="Js.Date.t" wrap="Js.Date.fromString" unwrap="Js.Date.toISOString">;
+  domain_rating <ocaml name="domainRating">: int wrap <ocaml module="DomainRating">;
+}
+
+type stats = {
+ refdomains: int;
+ ips: int;
+ class_c: int;
+}
+
+type main = {
+  refdomains <ocaml name="refDomains"> : t list;
+  stats: stats;
+}

@@ -7,10 +7,15 @@ let dirname =
   };
 
 let getRefdomainsJson = () => {
-  Node.Path.join([|dirname, "Refdomains.json"|])
-  ->Node.Fs.readFileAsUtf8Sync
-  ->Js.Json.parseExn
-  ->Refdomains.decodeMain;
+  switch (
+    Node.Path.join([|dirname, "Refdomains.json"|])
+    ->Node.Fs.readFileAsUtf8Sync
+    ->Js.Json.parseExn
+    ->Refdomains_bs.read_main
+  ) {
+  | exception _ => Belt.Result.Error("Failed to parse JSON")
+  | result => Belt.Result.Ok(result)
+  };
 };
 
 let app = express();
@@ -27,7 +32,10 @@ App.useOnPath(
 
 App.get(app, ~path="/refdomains") @@
 Middleware.from((_next, _req) =>
-  Response.sendJson(getRefdomainsJson()->Refdomains.encodeMain)
+  switch (getRefdomainsJson()) {
+  | Belt.Result.Ok(s) => s->Refdomains_bs.write_main |> Response.sendJson
+  | _ => Response.sendStatus(BadRequest)
+  }
 );
 
 let onListen = err =>

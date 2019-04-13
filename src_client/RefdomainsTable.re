@@ -5,12 +5,12 @@ type state =
   | Init
   | FetchingData
   | Error
-  | DataReady(array(Refdomains.t));
+  | DataReady(list(Refdomains_bs.t));
 
 /* Action declaration */
 type action =
   | ComponentMounted
-  | DataFetched(array(Refdomains.t))
+  | DataFetched(list(Refdomains_bs.t))
   | DataFetchingFailed(Js.Promise.error);
 
 /* Component template declaration.
@@ -38,7 +38,7 @@ let make = _children => {
           |> then_(response => response |> Window.json())
           |> then_(json =>
                json
-               |> Refdomains.decodeMain
+               |> Refdomains_bs.read_main
                |> (
                  decoded =>
                    self.send(DataFetched(decoded.refDomains)) |> resolve
@@ -62,14 +62,38 @@ let make = _children => {
     | FetchingData => <p> {s("Fetching data...")} </p>
     | Error =>
       <p> {s("Error while loading data. Check the browser console.")} </p>
-    | DataReady(_refdomains) =>
+    | DataReady(refdomains) =>
       <table>
         <thead>
-          <tr> <th> {s("Refdomain")} </th> <th> {s("Backlinks")} </th> </tr>
+          <tr>
+            <th> {s("Refdomain")} </th>
+            <th> {s("Backlinks")} </th>
+            <th> {s("Domain Rating")} </th>
+          </tr>
         </thead>
         <tbody>
-          <tr> <td> {s("foo.com")} </td> <td> {s("3")} </td> </tr>
-          <tr> <td> {s("bar.com")} </td> <td> {s("6")} </td> </tr>
+          {refdomains->Belt.List.map(rd =>
+             <tr key={rd.refdomain}>
+               <td> {s(rd.refdomain)} </td>
+               <td> {s(rd.backlinks |> string_of_int)} </td>
+               <td
+                 style={ReactDOMRe.Style.make(
+                   ~color=
+                     rd.domainRating
+                     |> (
+                       fun
+                       | Average(_) => "orange"
+                       | Good(_) => "green"
+                       | Poor(_) => "red"
+                     ),
+                   (),
+                 )}>
+                 {s(rd.domainRating |> DomainRating.unwrap |> string_of_int)}
+               </td>
+             </tr>
+           )
+           |> Array.of_list
+           |> ReasonReact.array}
         </tbody>
       </table>
     };
